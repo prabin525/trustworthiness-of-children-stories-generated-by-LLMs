@@ -4,3 +4,4 @@ env/
 .DS_Store
 KEYS.py
 .vscode/
+__pycache__/
