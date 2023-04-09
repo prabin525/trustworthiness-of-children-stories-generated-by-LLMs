@@ -199,8 +199,8 @@ if __name__ == '__main__':
             model = OPTForCausalLM.from_pretrained("facebook/opt-350m")
             tokenizer = AutoTokenizer.from_pretrained("facebook/opt-350m")
         else:
-            model = OPTForCausalLM.from_pretrained("facebook/opt-13b")
-            tokenizer = AutoTokenizer.from_pretrained("facebook/opt-13b")
+            model = OPTForCausalLM.from_pretrained("facebook/opt-6.7b")
+            tokenizer = AutoTokenizer.from_pretrained("facebook/opt-6.7b")
         model.to(device)
         generated_stories = gen_opt_stories(
             model,
