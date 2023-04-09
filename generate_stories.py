@@ -188,7 +188,7 @@ if __name__ == '__main__':
         num_return_sequences = 1
         top_k = 16
     else:
-        device = torch.device("cuda")
+        device = torch.device("cuda:0")
         story_size_divider = 1
         num_return_sequences = 10
         top_k = 100
