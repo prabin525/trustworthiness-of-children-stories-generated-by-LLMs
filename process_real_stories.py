@@ -14,6 +14,7 @@ def process_real_stories(story_dirs):
             id += 1
             file = open(story_dir+'/'+file_name)
             for i, line in enumerate(file):
+                print(file)
                 if i == 0:
                     story_data['title'] = line
                 elif i == 1:
@@ -26,8 +27,8 @@ def process_real_stories(story_dirs):
 
 if __name__ == '__main__':
     story_dirs = [
-        'books/Project Gutenburg/'
-        'Favorite Fairy Tales by Logan Marshall',
+        'books/Project_Gutenburg/'
+        'FFT_by_Logan_Marshall',
     ]
 
     all_stories = process_real_stories(story_dirs)
