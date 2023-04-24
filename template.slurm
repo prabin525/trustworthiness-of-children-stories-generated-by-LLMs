@@ -22,5 +22,4 @@ export TORCH_MODEL_ZOO=/scratch/pbhanda2/.torch/torch_model_zoo/
 export TORCH_HOME=/scratch/pbhanda2/.torch/torch_home/
 export STANZA_RESOURCES_DIR=/scratch/pbhanda2/.stanza/
 
-python generate_stories.py --model opt
-# python generate_stories.py --model llama
+python generate_stories.py --model $1
