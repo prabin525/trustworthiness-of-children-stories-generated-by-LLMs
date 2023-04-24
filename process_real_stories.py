@@ -14,7 +14,6 @@ def process_real_stories(story_dirs):
             id += 1
             file = open(story_dir+'/'+file_name)
             for i, line in enumerate(file):
-                print(file)
                 if i == 0:
                     story_data['title'] = line
                 elif i == 1:
