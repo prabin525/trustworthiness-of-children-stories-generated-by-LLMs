@@ -137,7 +137,6 @@ def gen_opt_stories(
         #     })
         #     gen_id += 1
 
-        break
     return generated_stories
 
 
