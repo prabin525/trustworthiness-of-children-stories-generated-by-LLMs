@@ -3,7 +3,9 @@ import json
 import torch
 from transformers import (
     AutoTokenizer,
-    OPTForCausalLM
+    OPTForCausalLM,
+    LlamaForCausalLM,
+    LlamaTokenizer
 )
 
 
@@ -15,7 +17,6 @@ def gen_opt_stories(
         real_stories,
         num_return_sequence=1,
         top_k=16,
-        story_size_divider=10
 ):
     generated_stories = []
 
@@ -23,7 +24,7 @@ def gen_opt_stories(
         gen_id = 0
         print(each['id'])
         tokenized_text = tokenizer.encode(each['text'], return_tensors='pt')
-        story_size = tokenized_text.shape[1]
+        # story_size = tokenized_text.shape[1]
 
         # First sentence as context
         first_line = f"{each['text'].split('.')[0]}."
@@ -37,7 +38,7 @@ def gen_opt_stories(
             do_sample=True,
             top_k=top_k,
             num_return_sequences=num_return_sequence,
-            max_length=story_size/story_size_divider
+            max_length=1024
         )
         outputs = tokenizer.batch_decode(
             gen,
@@ -55,86 +56,87 @@ def gen_opt_stories(
             })
             gen_id += 1
 
+        # First 256 tokens as context
+        prompt = tokenizer.batch_decode(tokenized_text[:, :256])
+        tokenized_input = tokenized_text[:, :256]
+        tokenized_input = tokenized_input.to(device)
+        gen = model.generate(
+            tokenized_input,
+            do_sample=True,
+            top_k=top_k,
+            num_return_sequences=num_return_sequence,
+            max_length=1024
+        )
+        outputs = tokenizer.batch_decode(
+            gen,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        for each_s in outputs:
+            generated_stories.append({
+                'id': each['id'],
+                'gen_id': gen_id,
+                'p_length': '256_tokens',
+                'model_name': model_name,
+                'gen_text': each_s,
+                'prompt': prompt[0]
+            })
+            gen_id += 1
+
+        # First 512 tokens as context
+        prompt = tokenizer.batch_decode(tokenized_text[:, :512])
+        tokenized_input = tokenized_text[:, :512]
+        tokenized_input = tokenized_input.to(device)
+        gen = model.generate(
+            tokenized_input,
+            do_sample=True,
+            top_k=top_k,
+            num_return_sequences=num_return_sequence,
+            max_length=1024
+        )
+        outputs = tokenizer.batch_decode(
+            gen,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        for each_s in outputs:
+            generated_stories.append({
+                'id': each['id'],
+                'gen_id': gen_id,
+                'p_length': '512_tokens',
+                'model_name': model_name,
+                'gen_text': each_s,
+                'prompt': prompt[0]
+            })
+            gen_id += 1
+
         # 10% as context
-        prompt = tokenizer.batch_decode(tokenized_text[:, :story_size//10])
-        tokenized_input = tokenized_text[:, :story_size//10]
-        tokenized_input = tokenized_input.to(device)
-        gen = model.generate(
-            tokenized_input,
-            do_sample=True,
-            top_k=top_k,
-            num_return_sequences=num_return_sequence,
-            max_length=story_size/story_size_divider
-        )
-        outputs = tokenizer.batch_decode(
-            gen,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=False
-        )
-        for each_s in outputs:
-            generated_stories.append({
-                'id': each['id'],
-                'gen_id': gen_id,
-                'p_length': '10_percentage',
-                'model_name': model_name,
-                'gen_text': each_s,
-                'prompt': prompt[0]
-            })
-            gen_id += 1
+        # prompt = tokenizer.batch_decode(tokenized_text[:, :story_size//10])
+        # tokenized_input = tokenized_text[:, :story_size//10]
+        # tokenized_input = tokenized_input.to(device)
+        # gen = model.generate(
+        #     tokenized_input,
+        #     do_sample=True,
+        #     top_k=top_k,
+        #     num_return_sequences=num_return_sequence,
+        #     max_length=story_size/story_size_divider
+        # )
+        # outputs = tokenizer.batch_decode(
+        #     gen,
+        #     skip_special_tokens=True,
+        #     clean_up_tokenization_spaces=False
+        # )
+        # for each_s in outputs:
+        #     generated_stories.append({
+        #         'id': each['id'],
+        #         'gen_id': gen_id,
+        #         'p_length': '10_percentage',
+        #         'model_name': model_name,
+        #         'gen_text': each_s,
+        #         'prompt': prompt[0]
+        #     })
+        #     gen_id += 1
 
-        # 25% as context
-        prompt = tokenizer.batch_decode(tokenized_text[:, :story_size//4])
-        tokenized_input = tokenized_text[:, :story_size//4]
-        tokenized_input = tokenized_input.to(device)
-        gen = model.generate(
-            tokenized_input,
-            do_sample=True,
-            top_k=top_k,
-            num_return_sequences=num_return_sequence,
-            max_length=story_size/story_size_divider
-        )
-        outputs = tokenizer.batch_decode(
-            gen,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=False
-        )
-        for each_s in outputs:
-            generated_stories.append({
-                'id': each['id'],
-                'gen_id': gen_id,
-                'p_length': '25_percentage',
-                'model_name': model_name,
-                'gen_text': each_s,
-                'prompt': prompt[0]
-            })
-            gen_id += 1
-
-        # 50% as context
-        prompt = tokenizer.batch_decode(tokenized_text[:, :story_size//2])
-        tokenized_input = tokenized_text[:, :story_size//2]
-        tokenized_input = tokenized_input.to(device)
-        gen = model.generate(
-            tokenized_input,
-            do_sample=True,
-            top_k=top_k,
-            num_return_sequences=num_return_sequence,
-            max_length=story_size/story_size_divider
-        )
-        outputs = tokenizer.batch_decode(
-            gen,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=False
-        )
-        for each_s in outputs:
-            generated_stories.append({
-                'id': each['id'],
-                'gen_id': gen_id,
-                'p_length': '50_percentage',
-                'model_name': model_name,
-                'gen_text': each_s,
-                'prompt': prompt[0]
-            })
-            gen_id += 1
     return generated_stories
 
 
@@ -146,7 +148,8 @@ if __name__ == '__main__':
         '--model',
         dest='model_name',
         choices=[
-            'opt'
+            'opt',
+            'llama'
         ],
         required=True,
     )
@@ -164,7 +167,7 @@ if __name__ == '__main__':
         '--local',
         dest='local',
         type=bool,
-        default=True
+        default=False
     )
     args = parser.parse_args()
     print(args)
@@ -184,12 +187,10 @@ if __name__ == '__main__':
 
         else:
             device = torch.device("mps")
-        story_size_divider = 10
         num_return_sequences = 1
         top_k = 16
     else:
         device = torch.device("cuda:0")
-        story_size_divider = 1
         num_return_sequences = 10
         top_k = 100
     real_stories = json.load(open(args.stories_loc))
@@ -210,9 +211,37 @@ if __name__ == '__main__':
             real_stories,
             num_return_sequences,
             top_k,
-            story_size_divider
         )
         json.dump(
             generated_stories,
             open(f'{args.out_loc}gen_stories_opt.json', 'w+')
+        )
+    elif args.model_name == 'llama':
+        if args.local:
+            model = LlamaForCausalLM.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/hf_weights'
+            )
+            tokenizer = LlamaTokenizer.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/hf_weights'
+            )
+        else:
+            model = LlamaForCausalLM.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/hf_weights'
+            )
+            tokenizer = LlamaTokenizer.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/hf_weights'
+            )
+        model.to(device)
+        generated_stories = gen_opt_stories(
+            model,
+            tokenizer,
+            device,
+            args.model_name,
+            real_stories,
+            num_return_sequences,
+            top_k,
+        )
+        json.dump(
+            generated_stories,
+            open(f'{args.out_loc}gen_stories_llama.json', 'w+')
         )

@@ -3,7 +3,8 @@
 #SBATCH --job-name=generate_stories
 
 ##HOPPER
-#SBATCH --qos=gpu --partition=gpuq --gres=gpu:A100.80gb:1
+##SBATCH --qos=gpu --partition=gpuq --gres=gpu:A100.80gb:1
+#SBATCH --qos=gpu --partition=gpuq --gres=gpu:3g.40gb:1
 
 #SBATCH --output=/scratch/%u/slurm_logs/%x-%j-%N.out
 #SBATCH --error=/scratch/%u/slurm_logs/%x-%j-%N.err
@@ -22,3 +23,4 @@ export TORCH_HOME=/scratch/pbhanda2/.torch/torch_home/
 export STANZA_RESOURCES_DIR=/scratch/pbhanda2/.stanza/
 
 python generate_stories.py --model opt
+# python generate_stories.py --model llama
