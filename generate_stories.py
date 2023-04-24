@@ -192,7 +192,7 @@ if __name__ == '__main__':
         top_k = 16
     else:
         device = torch.device("cuda:0")
-        num_return_sequences = 10
+        num_return_sequences = 5
         top_k = 100
     real_stories = json.load(open(args.stories_loc))
 
