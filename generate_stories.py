@@ -24,7 +24,6 @@ def gen_opt_stories(
         gen_id = 0
         print(each['id'])
         tokenized_text = tokenizer.encode(each['text'], return_tensors='pt')
-        # story_size = tokenized_text.shape[1]
 
         # First sentence as context
         first_line = f"{each['text'].split('.')[0]}."
@@ -140,6 +139,77 @@ def gen_opt_stories(
     return generated_stories
 
 
+def gen_alpaca_stories(
+        model,
+        tokenizer,
+        device,
+        model_name,
+        real_stories,
+        instruction_template,
+        num_return_sequence=1,
+        top_k=16,
+):
+    generated_stories = []
+    for each in real_stories:
+        gen_id = 0
+        print(each['id'])
+        fixed_title = each['title'].rstrip('\n').title()
+        instruction = instruction_template[0].format(fixed_title=fixed_title)
+        tokenized_instruction = tokenizer.encode(
+            instruction,
+            return_tensors='pt'
+        )
+        tokenized_instruction = tokenized_instruction.to(device)
+        gen = model.generate(
+            tokenized_instruction,
+            do_sample=True,
+            top_k=top_k,
+            num_return_sequences=num_return_sequence,
+            max_length=1024
+        )
+        outputs = tokenizer.batch_decode(
+            gen,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        for each_s in outputs:
+            generated_stories.append({
+                'id': each['id'],
+                'gen_id': gen_id,
+                'model_name': model_name,
+                'gen_text': each_s,
+                'prompt': instruction
+            })
+            gen_id += 1
+
+        instruction = instruction_template[1]
+        tokenized_instruction = tokenizer.encode(
+            instruction,
+            return_tensors='pt'
+        )
+        tokenized_instruction = tokenized_instruction.to(device)
+        gen = model.generate(
+            tokenized_instruction,
+            do_sample=True,
+            top_k=top_k,
+            num_return_sequences=num_return_sequence,
+            max_length=1024
+        )
+        outputs = tokenizer.batch_decode(
+            gen,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        for each_s in outputs:
+            generated_stories.append({
+                'model_name': model_name,
+                'gen_text': each_s,
+                'prompt': instruction
+            })
+
+    return generated_stories
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Generate stories with context'
@@ -149,7 +219,8 @@ if __name__ == '__main__':
         dest='model_name',
         choices=[
             'opt',
-            'llama'
+            'llama',
+            'alpaca'
         ],
         required=True,
     )
@@ -244,4 +315,38 @@ if __name__ == '__main__':
         json.dump(
             generated_stories,
             open(f'{args.out_loc}gen_stories_llama.json', 'w+')
+        )
+    elif args.model_name == 'alpaca':
+        instruction_template = [
+            open('instruction_template_1.txt').read(),
+            open('instruction_template_2.txt').read()
+        ]
+        if args.local:
+            model = LlamaForCausalLM.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/alpaca_weights_7B'
+            )
+            tokenizer = LlamaTokenizer.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/alpaca_weights_7B'
+            )
+        else:
+            model = LlamaForCausalLM.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/alpaca_weights_7B'
+            )
+            tokenizer = LlamaTokenizer.from_pretrained(
+                '/scratch/pbhanda2/projects/llama/alpaca_weights_7B'
+            )
+        model.to(device)
+        generated_stories = gen_alpaca_stories(
+            model,
+            tokenizer,
+            device,
+            args.model_name,
+            real_stories,
+            instruction_template,
+            num_return_sequences,
+            top_k,
+        )
+        json.dump(
+            generated_stories,
+            open(f'{args.out_loc}gen_stories_alpaca.json', 'w+')
         )
