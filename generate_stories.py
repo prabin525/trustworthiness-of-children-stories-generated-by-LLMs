@@ -178,7 +178,8 @@ def gen_alpaca_stories(
                 'gen_id': gen_id,
                 'model_name': model_name,
                 'gen_text': each_s,
-                'prompt': instruction
+                'prompt': instruction,
+                't_type': 1
             })
             gen_id += 1
 
@@ -204,9 +205,64 @@ def gen_alpaca_stories(
             generated_stories.append({
                 'model_name': model_name,
                 'gen_text': each_s,
-                'prompt': instruction
+                'prompt': instruction,
+                't_type': 2
             })
 
+        instruction = instruction_template[2].format(fixed_title=fixed_title)
+        tokenized_instruction = tokenizer.encode(
+            instruction,
+            return_tensors='pt'
+        )
+        tokenized_instruction = tokenized_instruction.to(device)
+        gen = model.generate(
+            tokenized_instruction,
+            do_sample=True,
+            top_k=top_k,
+            num_return_sequences=num_return_sequence,
+            max_length=1024
+        )
+        outputs = tokenizer.batch_decode(
+            gen,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        for each_s in outputs:
+            generated_stories.append({
+                'id': each['id'],
+                'gen_id': gen_id,
+                'model_name': model_name,
+                'gen_text': each_s,
+                'prompt': instruction,
+                't_type': 3
+            })
+            gen_id += 1
+
+        instruction = instruction_template[3]
+        tokenized_instruction = tokenizer.encode(
+            instruction,
+            return_tensors='pt'
+        )
+        tokenized_instruction = tokenized_instruction.to(device)
+        gen = model.generate(
+            tokenized_instruction,
+            do_sample=True,
+            top_k=top_k,
+            num_return_sequences=num_return_sequence,
+            max_length=1024
+        )
+        outputs = tokenizer.batch_decode(
+            gen,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        for each_s in outputs:
+            generated_stories.append({
+                'model_name': model_name,
+                'gen_text': each_s,
+                'prompt': instruction,
+                't_type': 4
+            })
     return generated_stories
 
 
@@ -319,7 +375,9 @@ if __name__ == '__main__':
     elif args.model_name == 'alpaca':
         instruction_template = [
             open('instruction_template_1.txt').read(),
-            open('instruction_template_2.txt').read()
+            open('instruction_template_2.txt').read(),
+            open('instruction_template_3.txt').read(),
+            open('instruction_template_4.txt').read()
         ]
         if args.local:
             model = LlamaForCausalLM.from_pretrained(
