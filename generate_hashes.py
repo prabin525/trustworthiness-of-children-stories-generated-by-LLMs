@@ -1,6 +1,7 @@
 import argparse
 import json
 import pandas as pd
+import matplotlib.pyplot as plt
 
 import stanza
 # import conllu
@@ -53,9 +54,49 @@ def ud_2_graph(tree, parent=1, graph=None):
     return graph
 
 
+def draw_dep_tree(UDtree):
+    g = ud_2_graph(UDtree)
+    pos = nx.spring_layout(g)
+    nx.draw(g, pos)
+    nx.draw_networkx_labels(
+        g,
+        pos,
+        labels={node: g.nodes[node]['name'] for node in g.nodes}
+    )
+    nx.draw_networkx_edge_labels(
+        g,
+        pos,
+        edge_labels={edge: g.edges[edge]['deprel'] for edge in g.edges}
+    )
+    plt.show()
+
+
+def pred_succ_subgraph(graph, node, succ, pred):
+    ps_list = []
+    ps_list.append(node)
+    try:
+        s = next(succ)
+        ps_list.append(s)
+        done_looping_s = False
+        while not done_looping_s:
+            try:
+                ps_list.append(next(succ))
+            except StopIteration:
+                done_looping_s = True
+    except StopIteration:
+        pass
+    try:
+        p = next(pred)
+        ps_list.append(p)
+    except StopIteration:
+        pass
+    return graph.subgraph(ps_list)
+
+
 def get_hashes(stories):
     sen_lengths = []
     hashes = []
+    sub_tree_hashes = []
     for each in stories:
         doc = nlp(each)
         CoNLL.write_doc2conll(doc, "output.conllu")
@@ -67,10 +108,29 @@ def get_hashes(stories):
             sentences = list(sentences)
 
         for each in sentences:
+            directed_tree = ud_2_graph(each)
             hashes.append(
-                nx.weisfeiler_lehman_graph_hash(ud_2_graph(each))
+                nx.weisfeiler_lehman_graph_hash(directed_tree)
             )
-    return sen_lengths, hashes
+            for node in directed_tree.nodes(data=True):
+                try:
+                    succ = directed_tree.successors(node[0])
+                    pred = directed_tree.predecessors(node[0])
+                    subgraph = pred_succ_subgraph(
+                        directed_tree,
+                        node[0],
+                        succ,
+                        pred
+                    )
+                    if not nx.is_empty(subgraph):
+                        sub_tree_hashes.append(nx.weisfeiler_lehman_graph_hash(
+                            subgraph,
+                            edge_attr='deprel',
+                            node_attr='upos'
+                        ))
+                except AttributeError:
+                    pass
+    return sen_lengths, hashes, sub_tree_hashes
 
 
 if __name__ == '__main__':
@@ -125,7 +185,7 @@ if __name__ == '__main__':
     original_stories = list(set(all_stories_opt.text.to_list()))
 
     # Get Sentence Length and hash of original stories
-    sen_lengths, hashes = get_hashes(original_stories)
+    sen_lengths, hashes, sub_tree_hashes = get_hashes(original_stories)
     toxic_measures = get_toxicity_measures(original_stories)
 
     json.dump(
@@ -136,6 +196,11 @@ if __name__ == '__main__':
     json.dump(
         hashes,
         open('hashes/original.json', 'w+')
+    )
+
+    json.dump(
+        sub_tree_hashes,
+        open('sub_tree_hashes/original.json', 'w+')
     )
 
     json.dump(
@@ -150,7 +215,7 @@ if __name__ == '__main__':
             all_stories_opt.p_length == each
         ].gen_text.to_list()
 
-        sen_lengths, hashes = get_hashes(stories)
+        sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
         toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
@@ -161,6 +226,11 @@ if __name__ == '__main__':
         json.dump(
             hashes,
             open(f'hashes/opt_{each}.json', 'w+')
+        )
+
+        json.dump(
+            sub_tree_hashes,
+            open(f'sub_tree_hashes/opt_{each}.json', 'w+')
         )
 
         json.dump(
@@ -175,7 +245,7 @@ if __name__ == '__main__':
             all_stories_llama.p_length == each
         ].gen_text.to_list()
 
-        sen_lengths, hashes = get_hashes(stories)
+        sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
         toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
@@ -186,6 +256,11 @@ if __name__ == '__main__':
         json.dump(
             hashes,
             open(f'hashes/llama_{each}.json', 'w+')
+        )
+
+        json.dump(
+            sub_tree_hashes,
+            open(f'sub_tree_hashes/llama_{each}.json', 'w+')
         )
 
         json.dump(
@@ -201,7 +276,7 @@ if __name__ == '__main__':
             all_stories_alpaca.t_type == each
         ].gen_text.to_list()
 
-        sen_lengths, hashes = get_hashes(stories)
+        sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
         toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
@@ -212,6 +287,11 @@ if __name__ == '__main__':
         json.dump(
             hashes,
             open(f'hashes/alpaca_{each}.json', 'w+')
+        )
+
+        json.dump(
+            sub_tree_hashes,
+            open(f'sub_tree_hashes/alpaca_{each}.json', 'w+')
         )
 
         json.dump(
@@ -227,7 +307,7 @@ if __name__ == '__main__':
             free_stories_alpaca.t_type == each
         ].gen_text.to_list()
 
-        sen_lengths, hashes = get_hashes(stories)
+        sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
         toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
@@ -238,6 +318,11 @@ if __name__ == '__main__':
         json.dump(
             hashes,
             open(f'hashes/alpaca_free_{each}.json', 'w+')
+        )
+
+        json.dump(
+            sub_tree_hashes,
+            open(f'sub_tree_hashes/alpaca_free_{each}.json', 'w+')
         )
 
         json.dump(
