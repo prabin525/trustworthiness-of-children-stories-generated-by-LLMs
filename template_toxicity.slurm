@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=hash_gen
+#SBATCH --job-name=toxic_gen
 
 ##HOPPER
 ##SBATCH --qos=gpu --partition=gpuq --gres=gpu:A100.80gb:1
@@ -22,4 +22,4 @@ export TORCH_MODEL_ZOO=/scratch/pbhanda2/.torch/torch_model_zoo/
 export TORCH_HOME=/scratch/pbhanda2/.torch/torch_home/
 export STANZA_RESOURCES_DIR=/scratch/pbhanda2/.stanza/
 
-python generate_hashes.py
+python generate_toxic_measures.py

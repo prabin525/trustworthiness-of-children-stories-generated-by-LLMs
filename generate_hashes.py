@@ -8,24 +8,6 @@ import stanza
 import networkx as nx
 from stanza.utils.conll import CoNLL
 from conllu import parse_tree_incr
-from transformers import pipeline
-
-
-detoxify_pipeline = pipeline(
-    'text-classification',
-    model='unitary/toxic-bert',
-    tokenizer='bert-base-uncased',
-    function_to_apply='sigmoid',
-    return_all_scores=True
-)
-
-
-def get_toxicity_measures(stories):
-    toxicty_measure = []
-    for s in stories:
-        a = detoxify_pipeline(s.split('.'))
-        toxicty_measure.extend(a)
-    return toxicty_measure
 
 
 nlp = stanza.Pipeline('en')
@@ -154,6 +136,8 @@ if __name__ == '__main__':
     # Create a dataframe with all stories and their generations
 
     all_stories = json.load(open('books/real_processed.json'))
+    modern_stories = json.load(open('books/modern_processed.json'))
+    modern_stories = pd.DataFrame(modern_stories)
     all_stories_opt = pd.DataFrame(all_stories)
     all_stories_llama = pd.DataFrame(all_stories)
     all_stories_alpaca = pd.DataFrame(all_stories)
@@ -183,10 +167,10 @@ if __name__ == '__main__':
     free_stories_alpaca = gen_stories.loc[gen_stories.gen_id.isnull()].copy()
 
     original_stories = list(set(all_stories_opt.text.to_list()))
+    modern_stories = list(set(modern_stories.text.to_list()))
 
     # Get Sentence Length and hash of original stories
     sen_lengths, hashes, sub_tree_hashes = get_hashes(original_stories)
-    toxic_measures = get_toxicity_measures(original_stories)
 
     json.dump(
         sen_lengths,
@@ -203,9 +187,22 @@ if __name__ == '__main__':
         open('sub_tree_hashes/original.json', 'w+')
     )
 
+    # Get Sentence Length and hash of modern stories
+    sen_lengths, hashes, sub_tree_hashes = get_hashes(modern_stories)
+
     json.dump(
-        toxic_measures,
-        open('toxic_measures/original.json', 'w+')
+        sen_lengths,
+        open('sen_lengths/modern.json', 'w+')
+    )
+
+    json.dump(
+        hashes,
+        open('hashes/modern.json', 'w+')
+    )
+
+    json.dump(
+        sub_tree_hashes,
+        open('sub_tree_hashes/modern.json', 'w+')
     )
 
     # OPT
@@ -216,7 +213,6 @@ if __name__ == '__main__':
         ].gen_text.to_list()
 
         sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
-        toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
             sen_lengths,
@@ -233,11 +229,6 @@ if __name__ == '__main__':
             open(f'sub_tree_hashes/opt_{each}.json', 'w+')
         )
 
-        json.dump(
-            toxic_measures,
-            open(f'toxic_measures/opt_{each}.json', 'w+')
-        )
-
     # LLaMA
     p_lengths = list(set(all_stories_llama.p_length.to_list()))
     for each in p_lengths:
@@ -246,7 +237,6 @@ if __name__ == '__main__':
         ].gen_text.to_list()
 
         sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
-        toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
             sen_lengths,
@@ -263,11 +253,6 @@ if __name__ == '__main__':
             open(f'sub_tree_hashes/llama_{each}.json', 'w+')
         )
 
-        json.dump(
-            toxic_measures,
-            open(f'toxic_measures/llama_{each}.json', 'w+')
-        )
-
     # Alpaca title fixed
     t_types = set(all_stories_alpaca.t_type.to_list())
 
@@ -277,7 +262,6 @@ if __name__ == '__main__':
         ].gen_text.to_list()
 
         sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
-        toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
             sen_lengths,
@@ -294,12 +278,8 @@ if __name__ == '__main__':
             open(f'sub_tree_hashes/alpaca_{each}.json', 'w+')
         )
 
-        json.dump(
-            toxic_measures,
-            open(f'toxic_measures/alpaca_{each}.json', 'w+')
-        )
-
     # Alpaca free
+
     t_types = set(free_stories_alpaca.t_type.to_list())
 
     for each in t_types:
@@ -308,7 +288,6 @@ if __name__ == '__main__':
         ].gen_text.to_list()
 
         sen_lengths, hashes, sub_tree_hashes = get_hashes(stories)
-        toxic_measures = get_toxicity_measures(stories)
 
         json.dump(
             sen_lengths,
@@ -323,9 +302,4 @@ if __name__ == '__main__':
         json.dump(
             sub_tree_hashes,
             open(f'sub_tree_hashes/alpaca_free_{each}.json', 'w+')
-        )
-
-        json.dump(
-            sen_lengths,
-            open(f'toxic_measures/alpaca_free_{each}.json', 'w+')
         )
