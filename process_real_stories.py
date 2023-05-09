@@ -29,8 +29,12 @@ if __name__ == '__main__':
         'books/Project_Gutenburg/'
         'FFT_by_Logan_Marshall',
     ]
+    # story_dirs = [
+    #     'books/modern stories/'
+    # ]
 
     all_stories = process_real_stories(story_dirs)
     out_file = 'books/real_processed.json'
+    # out_file = 'books/modern_processed.json'
     with open(out_file, 'w+') as of:
         json.dump(all_stories, of)
